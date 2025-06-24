@@ -67,7 +67,7 @@ def check_ads():
     sent_links = load_sent_links()
 
     for keyword, min_price, max_price in SEARCH_TARGETS:
-        url = f"https://www.olx.kz/list/q-{keyword.replace(' ', '%20')}/?search%5Border%5D=created_at%3Adesc&region=astana"
+        url = url = url = f"https://www.olx.kz/elektronika/telefony-i-aksesuary/mobilnye-telefony-smartfony/astana/?search[dist]=30&search[order]=created_at:desc&q={keyword.replace(' ', '%20')}"
         response = requests.get(url, headers=HEADERS)
         soup = BeautifulSoup(response.text, "html.parser")
         ads = soup.find_all("div", class_="css-1sw7q4x")
