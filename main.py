@@ -7,28 +7,11 @@ BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 SEARCH_TARGETS = [
-    ("iphone 12", 50000, 90000),
-    ("айфон 12", 50000, 90000),
-    ("айфон 13", 50000, 130000),
-    ("айфон 12 про", 50000, 100000),
-    ("айфон 12 про макс", 50000, 110000),
-    ("айфон 13 про макс", 50000, 170000),
-    ("iphone 12 pro max", 50000, 110000),
-    ("iphone 13 pro max", 50000, 170000),
-    ("айфон 13 про", 50000, 150000),
-    ("iphone 12 pro", 50000, 100000),
-    ("iphone 13", 50000, 130000),
-    ("iphone 13 pro", 50000, 150000),
-    ("iphone 14", 50000, 170000),
-]
-
-BLACKLIST_KEYWORDS = [
-    "копия", "реплика"
+    ("iphone", 0, 999999),  # широкий диапазон
 ]
 
 HEADERS = {"User-Agent": "Mozilla/5.0"}
 SENT_FILE = "sent.txt"
-
 
 def load_sent_links():
     if os.path.exists(SENT_FILE):
@@ -36,32 +19,18 @@ def load_sent_links():
             return set(f.read().splitlines())
     return set()
 
-
 def save_sent_link(link):
     with open(SENT_FILE, "a") as f:
         f.write(link + "\n")
 
-
 def send_photo(photo_url, caption):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto"
-    data = {
-        "chat_id": CHAT_ID,
-        "photo": photo_url,
-        "caption": caption,
-        "parse_mode": "HTML"
-    }
+    data = {"chat_id": CHAT_ID, "photo": photo_url, "caption": caption, "parse_mode": "HTML"}
     requests.post(url, data=data)
-
 
 def send_telegram(message):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    requests.post(url,
-                  data={
-                      "chat_id": CHAT_ID,
-                      "text": message,
-                      "parse_mode": "HTML"
-                  })
-
+    requests.post(url, data={"chat_id": CHAT_ID, "text": message, "parse_mode": "HTML"})
 
 def check_ads():
     sent_links = load_sent_links()
@@ -82,8 +51,7 @@ def check_ads():
                 continue
 
             title = title_tag.text.strip().lower()
-            price_text = price_tag.text.strip().replace(" ", "").replace(
-                "₸", "").replace("\xa0", "")
+            price_text = price_tag.text.strip().replace(" ", "").replace("₸", "").replace("\xa0", "")
             link = "https://www.olx.kz" + link_tag["href"]
             img_url = img_tag["src"] if img_tag and "src" in img_tag.attrs else None
 
@@ -95,39 +63,34 @@ def check_ads():
             if link in sent_links:
                 continue
 
-            if any(bad in title for bad in BLACKLIST_KEYWORDS):
-                continue
-
             if keyword in title and min_price <= price <= max_price:
-                caption = (f"📱 <b>{title_tag.text.strip()}</b>\n"
-                           f"💰 <b>{price} ₸</b>\n"
-                           f"🔍 Поиск: <i>{keyword}</i>\n"
-                           f"🔗 <a href='{link}'>Смотреть объявление</a>")
+                caption = (
+                    f"📱 <b>{title_tag.text.strip()}</b>\n"
+                    f"💰 <b>{price} ₸</b>\n"
+                    f"🔍 <i>{keyword}</i>\n"
+                    f"🔗 <a href='{link}'>Смотреть объявление</a>"
+                )
 
                 if img_url:
                     send_photo(img_url, caption)
-                    print(f"📷 Отправлено с фото: {title_tag.text.strip()}")
                 else:
                     send_telegram(caption)
-                    print(f"✅ Отправлено без фото: {title_tag.text.strip()}")
 
+                print(f"📢 Найдено: {title_tag.text.strip()} — {price}₸")
                 save_sent_link(link)
 
-
-# ✅ Flask-сервер для вызова через cron-job
+# Flask-сервер
 app = Flask(__name__)
-
 
 @app.route("/")
 def home():
-    return "✅ OLX бот работает!"
+    return "✅ OLX бот работает! (тест)"
 
 @app.route("/run")
 def run_bot():
-    print("🔁 Бот запущен, проверка начата")
-    send_telegram("🤖 Бот начал проверку объявлений!")
+    send_telegram("🤖 Тестовая проверка запущена!")
     check_ads()
-    return "🔁 Проверка объявлений выполнена!"
+    return "🔁 Проверка выполнена (тест)!"
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
