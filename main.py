@@ -85,8 +85,7 @@ def check_ads():
             price_text = price_tag.text.strip().replace(" ", "").replace(
                 "₸", "").replace("\xa0", "")
             link = "https://www.olx.kz" + link_tag["href"]
-            img_url = img_tag[
-                "src"] if img_tag and "src" in img_tag.attrs else None
+            img_url = img_tag["src"] if img_tag and "src" in img_tag.attrs else None
 
             try:
                 price = int(price_text)
@@ -131,4 +130,5 @@ def run_bot():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=81)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
