@@ -27,7 +27,7 @@ def check_ads():
     sent_links = load_sent_links()
     keyword = "айфон 14"
     min_price = 0
-    max_price = 150000
+    max_price = 200000
 
     url = f"https://www.olx.kz/d/elektronika/telefony/q-{keyword.replace(' ', '%20')}/?search[order]=created_at:desc&region=astana"
     response = requests.get(url, headers=HEADERS)
