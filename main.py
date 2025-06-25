@@ -71,11 +71,11 @@ def check_ads():
 
         response = requests.get(url, headers=HEADERS)
         soup = BeautifulSoup(response.text, "html.parser")
-        ads = soup.find_all("div", class_="css-1sw7q4x")
+        ads = soup.find_all("div", class_="css-13l3l78")
 
         for ad in ads:
             title_tag = ad.find("h6")
-            price_tag = ad.find("p", class_="css-10b0gli")
+            price_tag = ad.find("h3", class_="css-fqcbii")
             link_tag = ad.find("a", href=True)
             img_tag = ad.find("img")
 
