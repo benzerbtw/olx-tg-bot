@@ -25,7 +25,7 @@ def send_telegram(message):
 
 def check_ads():
     sent_links = load_sent_links()
-    keyword = "айфон 13"
+    keyword = "айфон 14"
     min_price = 0
     max_price = 150000
 
