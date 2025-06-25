@@ -54,8 +54,7 @@ def check_ads():
         res = requests.get(url, headers=HEADERS)
         soup = BeautifulSoup(res.text, "html.parser")
 
-        ads = soup.select("div[data-cy='l-card']")
-
+        ads = soup.select("div[data-cy='l-card']")[:10]
         for ad in ads:
             link_tag = ad.find("a", href=True)
             title_tag = ad.find("h6") or ad.find("h4")
