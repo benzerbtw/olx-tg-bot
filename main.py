@@ -6,8 +6,21 @@ from flask import Flask
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
+# 🔍 Твои поисковые фильтры
 SEARCH_TARGETS = [
-    ("iphone", 0, 999999),  # Фильтр по ключевому слову и цене
+    ("iphone 12", 50000, 100000),
+    ("айфон 12", 50000, 100000),
+    ("айфон 13", 50000, 130000),
+    ("айфон 12 про", 50000, 110000),
+    ("айфон 12 про макс", 50000, 110000),
+    ("айфон 13 про макс", 50000, 160000),
+    ("iphone 12 pro max", 50000, 110000),
+    ("iphone 13 pro max", 50000, 160000),
+    ("айфон 13 про", 50000, 150000),
+    ("iphone 12 pro", 50000, 110000),
+    ("iphone 13", 50000, 130000),
+    ("iphone 13 pro", 50000, 150000),
+    ("iphone 14", 50000, 170000),
 ]
 
 BLACKLIST_KEYWORDS = ["копия", "реплика"]
@@ -36,11 +49,11 @@ def send_telegram(message):
 def check_ads():
     sent_links = load_sent_links()
     for keyword, min_price, max_price in SEARCH_TARGETS:
-        url = f"https://www.olx.kz/d/elektronika/telefony/q-{keyword}/?search[order]=created_at:desc"
+        url = f"https://www.olx.kz/d/elektronika/telefony/q-{keyword.replace(' ', '%20')}/?search[order]=created_at:desc"
         res = requests.get(url, headers=HEADERS)
         soup = BeautifulSoup(res.text, "html.parser")
 
-        ads = soup.select("div[data-cy='l-card']")  # универсальный селектор
+        ads = soup.select("div[data-cy='l-card']")
 
         for ad in ads:
             link_tag = ad.find("a", href=True)
@@ -71,6 +84,7 @@ def check_ads():
             caption = (
                 f"📱 <b>{title_tag.text.strip()}</b>\n"
                 f"💰 <b>{price} ₸</b>\n"
+                f"🔍 Поиск: <i>{keyword}</i>\n"
                 f"🔗 <a href='{link}'>Смотреть объявление</a>"
             )
 
