@@ -6,8 +6,9 @@ from flask import Flask
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
-# Пустой запрос, чтобы находить любые объявления
-SEARCH_TARGETS = [("", 0, 10000000)]
+SEARCH_TARGETS = [
+    ("iphone 13", 0, 150000),
+]
 
 BLACKLIST_KEYWORDS = ["копия", "реплика"]
 HEADERS = {"User-Agent": "Mozilla/5.0"}
@@ -34,23 +35,18 @@ def check_ads():
 
     for keyword, min_price, max_price in SEARCH_TARGETS:
         url = (
-            f"https://www.olx.kz/elektronika/telefony-i-aksesuary/"
-            f"mobilnye-telefony-smartfony/astana/?search[order]=created_at:desc"
+            "https://www.olx.kz/elektronika/telefony-i-aksesuary/"
+            "mobilnye-telefony-smartfony/astana/?search[order]=created_at:desc"
         )
+
         response = requests.get(url, headers=HEADERS)
         soup = BeautifulSoup(response.text, "html.parser")
-
-        # ✅ ОБНОВЛЁННЫЙ класс карточки
-        ads = soup.find_all("div", class_="css-13l3l78")
+        ads = soup.find_all("div", class_="css-u2ayx9")  # актуальный класс карточки
 
         for ad in ads:
-            # ✅ Заголовок объявления
             title_tag = ad.find("h4", class_="css-1g61gc2")
-            # ✅ Цена
             price_tag = ad.find("p", class_="css-uj7mm0")
-            # ✅ Ссылка
             link_tag = ad.find("a", href=True)
-            # ✅ Картинка
             img_tag = ad.find("img")
 
             if not (title_tag and price_tag and link_tag):
@@ -59,7 +55,7 @@ def check_ads():
             title = title_tag.text.strip().lower()
             price_text = price_tag.text.strip().replace(" ", "").replace("₸", "").replace("\xa0", "")
             link = "https://www.olx.kz" + link_tag["href"]
-            img_url = img_tag.get("src") if img_tag else None
+            img_url = img_tag["src"] if img_tag and "src" in img_tag.attrs else None
 
             try:
                 price = int(price_text)
@@ -69,7 +65,7 @@ def check_ads():
             if link in sent_links or any(bad in title for bad in BLACKLIST_KEYWORDS):
                 continue
 
-            if min_price <= price <= max_price:
+            if keyword in title and min_price <= price <= max_price:
                 caption = (
                     f"📱 <b>{title_tag.text.strip()}</b>\n"
                     f"💰 <b>{price} ₸</b>\n"
