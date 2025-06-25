@@ -6,10 +6,8 @@ from flask import Flask
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
-# Упрощённый фильтр — найдёт всё, что угодно
-SEARCH_TARGETS = [
-    ("", 0, 10000000),  # Пустой запрос — просто чтобы что-то найти
-]
+# Пустой запрос, чтобы находить любые объявления
+SEARCH_TARGETS = [("", 0, 10000000)]
 
 BLACKLIST_KEYWORDS = ["копия", "реплика"]
 HEADERS = {"User-Agent": "Mozilla/5.0"}
@@ -41,23 +39,27 @@ def check_ads():
         )
         response = requests.get(url, headers=HEADERS)
         soup = BeautifulSoup(response.text, "html.parser")
-        ads = soup.find_all("div", class_="css-13l3l78")  # Актуальный класс объявления
+
+        # ✅ ОБНОВЛЁННЫЙ класс карточки
+        ads = soup.find_all("div", class_="css-13l3l78")
 
         for ad in ads:
-            title_tag = ad.find("h6") or ad.find("h4")
-            price_tag = ad.find("p", class_="css-uj7mm0") or ad.find("h3")
+            # ✅ Заголовок объявления
+            title_tag = ad.find("h4", class_="css-1g61gc2")
+            # ✅ Цена
+            price_tag = ad.find("p", class_="css-uj7mm0")
+            # ✅ Ссылка
             link_tag = ad.find("a", href=True)
+            # ✅ Картинка
             img_tag = ad.find("img")
 
             if not (title_tag and price_tag and link_tag):
                 continue
 
             title = title_tag.text.strip().lower()
-            price_text = (
-                price_tag.text.strip().replace(" ", "").replace("₸", "").replace("\xa0", "")
-            )
+            price_text = price_tag.text.strip().replace(" ", "").replace("₸", "").replace("\xa0", "")
             link = "https://www.olx.kz" + link_tag["href"]
-            img_url = img_tag["src"] if img_tag and "src" in img_tag.attrs else None
+            img_url = img_tag.get("src") if img_tag else None
 
             try:
                 price = int(price_text)
