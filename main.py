@@ -6,24 +6,6 @@ from flask import Flask
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
-SEARCH_TARGETS = [
-    ("iphone 12", 50000, 150000),
-    ("айфон 12", 50000, 150000),
-    ("айфон 13", 50000, 200000),
-    ("айфон 12 про", 50000, 170000),
-    ("айфон 12 про макс", 50000, 180000),
-    ("айфон 13 про макс", 50000, 250000),
-    ("iphone 12 pro max", 50000, 180000),
-    ("iphone 13 pro max", 50000, 250000),
-    ("айфон 13 про", 50000, 220000),
-    ("iphone 12 pro", 50000, 170000),
-    ("iphone 13", 50000, 200000),
-    ("iphone 13 pro", 50000, 220000),
-    ("iphone 14", 50000, 300000),
-]
-
-BLACKLIST_KEYWORDS = ["копия", "реплика"]
-
 HEADERS = {"User-Agent": "Mozilla/5.0"}
 SENT_FILE = "sent.txt"
 
@@ -37,86 +19,62 @@ def save_sent_link(link):
     with open(SENT_FILE, "a") as f:
         f.write(link + "\n")
 
-def send_photo(photo_url, caption):
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto"
-    data = {
-        "chat_id": CHAT_ID,
-        "photo": photo_url,
-        "caption": caption,
-        "parse_mode": "HTML"
-    }
-    requests.post(url, data=data)
-
 def send_telegram(message):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    requests.post(url, data={
-        "chat_id": CHAT_ID,
-        "text": message,
-        "parse_mode": "HTML"
-    })
+    requests.post(url, data={"chat_id": CHAT_ID, "text": message, "parse_mode": "HTML"})
 
 def check_ads():
     sent_links = load_sent_links()
+    keyword = "айфон 13"
+    min_price = 0
+    max_price = 150000
 
-    for keyword, min_price, max_price in SEARCH_TARGETS:
-        url = f"https://www.olx.kz/elektronika/telefony-i-aksesuary/mobilnye-telefony-smartfony/astana/?search[dist]=30&search[order]=created_at:desc&q={keyword.replace(' ', '%20')}"
-        response = requests.get(url, headers=HEADERS)
-        soup = BeautifulSoup(response.text, "html.parser")
-        ads = soup.find_all("div", class_="css-13l3l78")
+    url = f"https://www.olx.kz/d/elektronika/telefony/q-{keyword.replace(' ', '%20')}/?search[order]=created_at:desc&region=astana"
+    response = requests.get(url, headers=HEADERS)
+    soup = BeautifulSoup(response.text, "html.parser")
 
-        for ad in ads:
-            title_tag = ad.find("h6")
-            price_tag = ad.find("h3", class_="css-fqcbii")
-            link_tag = ad.find("a", href=True)
-            img_tag = ad.find("img")
+    ads = soup.find_all("div", class_="css-13l3l78")  # обнови class_ если OLX его сменил
 
-            if not (title_tag and price_tag and link_tag):
-                continue
+    for ad in ads:
+        title_tag = ad.find("h6") or ad.find("h4")
+        price_tag = ad.find("p", class_="css-uj7mm0") or ad.find("h3")
+        link_tag = ad.find("a", href=True)
+        img_tag = ad.find("img")
 
-            title = title_tag.text.strip().lower()
-            price_text = price_tag.text.strip().replace(" ", "").replace("₸", "").replace("\xa0", "")
-            link = "https://www.olx.kz" + link_tag["href"]
-            img_url = img_tag["src"] if img_tag and "src" in img_tag.attrs else None
+        if not (title_tag and price_tag and link_tag):
+            continue
 
-            try:
-                price = int(price_text)
-            except ValueError:
-                continue
+        title = title_tag.text.strip().lower()
+        price_text = price_tag.text.strip().replace(" ", "").replace("₸", "").replace("\xa0", "")
+        link = "https://www.olx.kz" + link_tag["href"]
+        img_url = img_tag["src"] if img_tag and "src" in img_tag.attrs else None
 
-            if link in sent_links:
-                continue
+        try:
+            price = int(price_text)
+        except ValueError:
+            continue
 
-            if any(bad in title for bad in BLACKLIST_KEYWORDS):
-                continue
+        if link in sent_links or "копия" in title or "реплика" in title:
+            continue
 
-            if keyword in title and min_price <= price <= max_price:
-                caption = (f"📱 <b>{title_tag.text.strip()}</b>\n"
-                           f"💰 <b>{price} ₸</b>\n"
-                           f"🔍 Поиск: <i>{keyword}</i>\n"
-                           f"🔗 <a href='{link}'>Смотреть объявление</a>")
-
-                if img_url:
-                    send_photo(img_url, caption)
-                    print(f"📷 Отправлено с фото: {title_tag.text.strip()}")
-                else:
-                    send_telegram(caption)
-                    print(f"✅ Отправлено без фото: {title_tag.text.strip()}")
-
-                save_sent_link(link)
+        if "айфон 13" in title and min_price <= price <= max_price:
+            caption = f"📱 <b>{title}</b>\n💰 <b>{price} ₸</b>\n🔗 <a href='{link}'>Смотреть объявление</a>"
+            send_telegram(caption)
+            print("✅ Отправлено:", title)
+            save_sent_link(link)
 
 # Flask-сервер
 app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return "✅ OLX бот работает!"
+    return "✅ Бот запущен!"
 
 @app.route("/run")
 def run_bot():
-    print("🔁 Бот запущен, проверка начата")
-    send_telegram("🤖 Бот начал проверку объявлений!")
+    send_telegram("🤖 Бот начал проверку объявлений (айфон 13 до 150к)!")
     check_ads()
-    return "🔁 Проверка объявлений выполнена!"
+    return "🔁 Проверка выполнена"
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
