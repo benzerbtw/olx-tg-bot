@@ -2,23 +2,12 @@ import requests
 from bs4 import BeautifulSoup
 import os
 from flask import Flask
+
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 SEARCH_TARGETS = [
-    ("iphone 12", 50000, 100000),
-    ("айфон 12", 50000, 100000),
-    ("айфон 13", 50000, 130000),
-    ("айфон 12 про", 50000, 110000),
-    ("айфон 12 про макс", 50000, 110000),
-    ("айфон 13 про макс", 50000, 160000),
-    ("iphone 12 pro max", 50000, 110000),
-    ("iphone 13 pro max", 50000, 160000),
-    ("айфон 13 про", 50000, 150000),
-    ("iphone 12 pro", 50000, 110000),
-    ("iphone 13", 50000, 130000),
-    ("iphone 13 pro", 50000, 150000),
-    ("iphone 14", 50000, 170000),
+    ("iphone", 0, 999999),  # Фильтр по ключевому слову и цене
 ]
 
 BLACKLIST_KEYWORDS = ["копия", "реплика"]
@@ -31,24 +20,28 @@ def load_sent_links():
 def save_sent_link(link):
     with open(SENT_FILE, "a") as f:
         f.write(link + "\n")
+
 def send_photo(photo_url, caption):
     requests.post(
         f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto",
         data={"chat_id": CHAT_ID, "photo": photo_url, "caption": caption, "parse_mode": "HTML"}
     )
+
 def send_telegram(message):
     requests.post(
         f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
         data={"chat_id": CHAT_ID, "text": message, "parse_mode": "HTML"}
     )
+
 def check_ads():
     sent_links = load_sent_links()
     for keyword, min_price, max_price in SEARCH_TARGETS:
-        url = f"https://www.olx.kz/d/elektronika/telefony/q-{keyword.replace(' ', '%20')}/?search[order]=created_at:desc"
+        url = f"https://www.olx.kz/d/elektronika/telefony/q-{keyword}/?search[order]=created_at:desc"
         res = requests.get(url, headers=HEADERS)
         soup = BeautifulSoup(res.text, "html.parser")
 
-        ads = soup.select("div[data-cy='l-card']")
+        ads = soup.select("div[data-cy='l-card']")  # универсальный селектор
+
         for ad in ads:
             link_tag = ad.find("a", href=True)
             title_tag = ad.find("h6") or ad.find("h4")
@@ -78,23 +71,18 @@ def check_ads():
             caption = (
                 f"📱 <b>{title_tag.text.strip()}</b>\n"
                 f"💰 <b>{price} ₸</b>\n"
-                f"🔍 Поиск: <i>{keyword}</i>\n"
                 f"🔗 <a href='{link}'>Смотреть объявление</a>"
             )
 
             if img_tag and img_tag.get("src"):
-                price_text = (
-                    price_tag.text.strip()
-                    .replace("₸", "")
-                    .replace(" ", "")
-                    .replace(u"\xa0", "")
-                )
-
+                send_photo(img_tag["src"], caption)
             else:
                 send_telegram(caption)
+
             save_sent_link(link)
             print("✅ Отправлено:", title_tag.text.strip())
 
+# Flask сервер
 app = Flask(__name__)
 
 @app.route("/")
@@ -110,10 +98,4 @@ def run_bot():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
-def check_ads():
-    try:
-        sent_links = load_sent_links()
-        # ... весь остальной код
-    except Exception as e:
-        print("Ошибка при проверке объявлений:", e)
-        send_telegram(f"❌ Ошибка: {e}")
+
