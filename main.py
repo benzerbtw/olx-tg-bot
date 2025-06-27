@@ -7,7 +7,19 @@ BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 SEARCH_TARGETS = [
-    ("iphone 12", 50000, 90000 )
+    ("iphone 12", 50000, 90000 ),
+    ("айфон 12", 50000, 90000),
+    ("айфон 13", 50000, 130000),
+    ("айфон 12 про", 50000, 100000),
+    ("айфон 12 про макс", 50000, 110000),
+    ("айфон 13 про макс", 50000, 170000),
+    ("iphone 12 pro max", 50000, 110000),
+    ("iphone 13 pro max", 50000, 170000),
+    ("айфон 13 про", 50000, 150000),
+    ("iphone 12 pro", 50000, 100000),
+    ("iphone 13", 50000, 130000),
+    ("iphone 13 pro", 50000, 150000),
+    ("iphone 14", 50000, 170000) 
 ]
 
 BLACKLIST_KEYWORDS = ["копия", "реплика"]
@@ -74,10 +86,8 @@ def check_ads():
                 f"🔗 <a href='{link}'>Смотреть объявление</a>"
             )
 
-            if img_tag and img_tag.get("src"):
-                send_photo(img_tag["src"], caption)
-            else:
-                send_telegram(caption)
+            send_telegram(caption)
+
 
             save_sent_link(link)
             print("✅ Отправлено:", title_tag.text.strip())
