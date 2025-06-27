@@ -64,7 +64,7 @@ def check_ads():
             if not (min_price <= price <= max_price):
                 continue
 
-            link = "https://www.olx.kz" + link_tag["href"]
+            link = "https://www.olx.kz" + link_tag["href"].split("?")[0] 
             if link in sent_links:
                 continue
 
