@@ -2,11 +2,9 @@ import requests
 from bs4 import BeautifulSoup
 import os
 from flask import Flask
-
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
-# 🔍 Твои поисковые фильтры
 SEARCH_TARGETS = [
     ("iphone 12", 50000, 100000),
     ("айфон 12", 50000, 100000),
@@ -39,7 +37,6 @@ def send_photo(photo_url, caption):
         f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto",
         data={"chat_id": CHAT_ID, "photo": photo_url, "caption": caption, "parse_mode": "HTML"}
     )
-
 def send_telegram(message):
     requests.post(
         f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
@@ -54,7 +51,7 @@ def check_ads():
         res = requests.get(url, headers=HEADERS)
         soup = BeautifulSoup(res.text, "html.parser")
 
-        ads = soup.select("div[data-cy='l-card']")[:10]
+        ads = soup.select("div[data-cy='l-card']")
         for ad in ads:
             link_tag = ad.find("a", href=True)
             title_tag = ad.find("h6") or ad.find("h4")
@@ -92,11 +89,9 @@ def check_ads():
                 send_photo(img_tag["src"], caption)
             else:
                 send_telegram(caption)
-
             save_sent_link(link)
             print("✅ Отправлено:", title_tag.text.strip())
 
-# Flask сервер
 app = Flask(__name__)
 
 @app.route("/")
