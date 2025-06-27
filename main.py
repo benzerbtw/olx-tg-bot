@@ -28,10 +28,13 @@ HEADERS = {"User-Agent": "Mozilla/5.0"}
 SENT_FILE = "sent.txt"
 
 def load_sent_links():
-    return set(open(SENT_FILE).read().splitlines()) if os.path.exists(SENT_FILE) else set()
+    if not os.path.exists(SENT_FILE):
+        return set()
+    with open(SENT_FILE, "r", encoding="utf-8") as f:
+        return set(line.strip() for line in f)
 
 def save_sent_link(link):
-    with open(SENT_FILE, "a") as f:
+    with open(SENT_FILE, "a", encoding="utf-8") as f:
         f.write(link + "\n")
 
 def send_photo(photo_url, caption):
