@@ -36,7 +36,7 @@ def send_telegram(message):
 def check_ads():
     sent_links = load_sent_links()
     for keyword, min_price, max_price in SEARCH_TARGETS:
-        url = f"https://www.olx.kz/d/elektronika/telefony/q-{keyword}/?search[order]=created_at:desc"
+        url = f"https://www.olx.kz/elektronika/astana/?search[dist]=30&search[order]=created_at:desc&q={keyword.replace(' ', '%20')}"
         res = requests.get(url, headers=HEADERS)
         soup = BeautifulSoup(res.text, "html.parser")
 
