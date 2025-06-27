@@ -31,7 +31,6 @@ def load_sent_links():
 def save_sent_link(link):
     with open(SENT_FILE, "a") as f:
         f.write(link + "\n")
-
 def send_photo(photo_url, caption):
     requests.post(
         f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto",
@@ -42,12 +41,10 @@ def send_telegram(message):
         f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
         data={"chat_id": CHAT_ID, "text": message, "parse_mode": "HTML"}
     )
-
 def check_ads():
     sent_links = load_sent_links()
     for keyword, min_price, max_price in SEARCH_TARGETS:
         url = f"https://www.olx.kz/d/elektronika/telefony/q-{keyword.replace(' ', '%20')}/?search[order]=created_at:desc"
-
         res = requests.get(url, headers=HEADERS)
         soup = BeautifulSoup(res.text, "html.parser")
 
@@ -86,7 +83,13 @@ def check_ads():
             )
 
             if img_tag and img_tag.get("src"):
-                send_photo(img_tag["src"], caption)
+                price_text = (
+                    price_tag.text.strip()
+                    .replace("₸", "")
+                    .replace(" ", "")
+                    .replace(u"\xa0", "")
+                )
+
             else:
                 send_telegram(caption)
             save_sent_link(link)
